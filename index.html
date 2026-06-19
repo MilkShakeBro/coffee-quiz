@@ -63,12 +63,9 @@
   .recommend .tag{font-size:12px;letter-spacing:2px;opacity:.9;}
   .recommend h3{font-size:21px;font-weight:600;margin:6px 0 10px;}
   .recommend p{font-size:14.5px;opacity:.95;line-height:1.7;}
-  .meta{font-size:13px;color:var(--ink-soft);text-align:center;background:var(--card);
-    border:1px dashed var(--line);border-radius:14px;padding:14px;margin-bottom:22px;}
   .restart{display:block;width:100%;background:var(--ink);color:#fff;border:none;border-radius:13px;
     padding:15px;font-size:15px;cursor:pointer;font-family:inherit;letter-spacing:1px;}
   .restart:hover{opacity:.9;}
-  .footnote{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:20px;line-height:1.6;}
   .err{color:#b5482f;}
 </style>
 </head>
@@ -102,9 +99,7 @@
       <h3>你的完整風味光譜</h3>
       <div id="spectrum"></div>
     </div>
-    <div class="meta" id="meta"></div>
-    <button class="restart" onclick="restart()">重新測一次</button>
-    <p class="footnote">測試版問卷，計分邏輯仍在調整中。</p>
+    <button class="restart" onclick="restart()">重新測驗</button>
   </div>
 </div>
 
@@ -255,10 +250,6 @@ function showResult(data){
       <div class="row-pct">${item.pct}%</div>`;
     specEl.appendChild(row);
   });
-  document.getElementById("meta").innerHTML =
-    `你的咖啡品味分級：<b>${data.level}</b>（品味分 ${data.tasteScore}/6）<br>`+
-    `本次計分比例 — 生活題 ${data.weightLife}%、咖啡題 ${data.weightCoffee}%<br>`+
-    `第二名是「${data.second.name}」（${data.second.pct}%），套組可帶入混搭風味。`;
   document.getElementById("result").style.display="block";
   barEl.style.width="100%";
   requestAnimationFrame(()=>{ setTimeout(()=>{
