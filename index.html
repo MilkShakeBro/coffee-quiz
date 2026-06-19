@@ -26,17 +26,24 @@
   .q.active{display:block;}
   @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
   .qnum{font-size:12px;letter-spacing:2px;color:var(--ink-soft);margin-bottom:8px;}
-  .qtitle{font-size:19px;font-weight:600;margin-bottom:18px;line-height:1.5;}
+  .qtitle{font-size:19px;font-weight:600;margin-bottom:6px;line-height:1.5;}
+  .qhint{font-size:13px;color:var(--ink-soft);margin-bottom:18px;}
   .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);
     border-radius:13px;padding:14px 16px;margin-bottom:10px;font-size:15.5px;color:var(--ink);
-    cursor:pointer;transition:all .15s ease;font-family:inherit;}
+    cursor:pointer;transition:border-color .15s ease,background .15s ease;font-family:inherit;
+    -webkit-tap-highlight-color:transparent;}
   .opt:hover{border-color:var(--accent);background:#fffaf2;}
-  .opt:active{transform:scale(.99);}
-  .nav{display:flex;justify-content:space-between;margin-top:6px;}
+  .opt.selected{border-color:var(--accent);background:#fff3e6;}
+  .opt .tick{float:right;color:var(--accent);font-weight:700;opacity:0;}
+  .opt.selected .tick{opacity:1;}
+  .nav{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:12px;}
   .back{background:none;border:none;color:var(--ink-soft);font-size:14px;cursor:pointer;
     font-family:inherit;padding:8px 4px;}
   .back:hover{color:var(--ink);}
   .back:disabled{opacity:0;cursor:default;}
+  .next{background:var(--accent);color:#fff;border:none;border-radius:11px;padding:11px 22px;
+    font-size:15px;cursor:pointer;font-family:inherit;letter-spacing:1px;}
+  .next:disabled{opacity:.4;cursor:default;}
   #loading,#result{display:none;}
   #loading{text-align:center;padding:60px 0;color:var(--ink-soft);font-size:15px;}
   .result-head{text-align:center;margin-bottom:8px;}
@@ -102,29 +109,30 @@
 </div>
 
 <script>
-// ===== 設定：部署 Worker 後，把這行換成你的 Worker 網址 =====
+// ===== 設定：把這行換成你的 Worker 網址（結尾不要斜線）=====
 const API_URL = "https://misty-hall-a5c7.wyes9830214.workers.dev";
 
-// 題目「文字」放前端（公開沒關係），但「權重」不在這裡，全在後端。
+// multi:true 的題目為多選，maxPick 為最多可勾選數
 const QUESTIONS = [
   { num:"品味 1 / 2", title:"你喝咖啡多久了？",
-    options:["幾乎不喝／剛開始","偶爾喝，還在摸索","常喝，有自己的喜好","很投入，會研究產區與處理法"] },
+    options:["幾乎不喝／剛開始","偶爾喝，還在摸索","常喝，有自己的喜好","投入，留意產區與處理法"] },
   { num:"品味 2 / 2", title:"喝咖啡時，你喝得出不同的風味差異嗎？",
-    options:["老實說喝不太出來","大概能分出濃淡、苦酸","能感覺到一些果香、花香","能明確分辨不同風味層次"] },
-  { num:"生活 1 / 2", title:"走進一家飲料／甜點店，你最想點哪一個？",
-    options:["微醺感的調酒、酒香巧克力","花茶、玫瑰荔枝氣泡飲","熱可可、堅果拿鐵","莓果優格、藍莓氣泡飲","焦糖布丁、蜂蜜蛋糕","檸檬氣泡水、柚子茶"] },
-  { num:"生活 2 / 2", title:"哪一種「感覺」最像你？",
+    options:["老實說喝不太出來","大概能分出濃淡、苦酸","能感覺到一些果香、花香","能大致分辨不同風味層次"] },
+  { num:"生活 1 / 2", title:"走進一家飲料／甜點店，你最想點哪一個？", multi:true, maxPick:3,
+    options:["微醺感的調酒、酒香巧克力","花茶、玫瑰荔枝冰茶","熱可可、堅果拿鐵","莓果優格、藍莓冰茶","焦糖布丁、蜂蜜蛋糕","檸檬冰茶、柚子茶"] },
+  { num:"生活 2 / 2", title:"哪些「感覺」像你？", multi:true, maxPick:3,
     options:["成熟、有品味、喜歡特別的東西","溫柔、細膩、注重氛圍","沉穩、踏實、喜歡熟悉的安心感","愛嘗鮮、有點調皮、怕無聊","隨和、療癒系、討喜","清爽、俐落、喜歡明亮的東西"] },
   { num:"咖啡 1 / 3", title:"如果一杯咖啡可以「聞起來像」一個畫面，你想要哪個？",
     options:["像陳年酒窖、熟成水果的醇厚香","像剛走進花店的滿室花香","像烤堅果、可可粉的暖香","像打翻一籃新鮮莓果","像焦糖、紅糖在鍋裡融化","像切開柑橘、檸檬的清新"] },
-  { num:"咖啡 2 / 3", title:"喝下去那一口，你最希望主角是什麼味道？",
+  { num:"咖啡 2 / 3", title:"喝下去那一口，你最希望咖啡是什麼味道？",
     options:["厚實、有層次、回味複雜","輕盈、優雅、香氣帶甜","飽滿、濃郁、像巧克力","活潑、酸甜跳動、像果汁","順口、甜甜的、零負擔","明亮、清爽、有清楚的酸"] },
   { num:"咖啡 3 / 3", title:"對「酸」這件事，你的態度比較接近？",
     options:["不愛酸，喜歡醇厚或濃郁的","一點點甜酸可以，要溫和","喜歡明亮活潑的果酸","愛乾淨明亮的酸，越清爽越好","不確定，看整體順不順口"] },
 ];
 
 let current = 0;
-const answers = new Array(QUESTIONS.length).fill(null);
+// 單選存數字、多選存陣列
+const answers = QUESTIONS.map(q => q.multi ? [] : null);
 const quizEl = document.getElementById("quiz");
 const barEl = document.getElementById("bar");
 const stepLabel = document.getElementById("stepLabel");
@@ -134,21 +142,59 @@ function render(){
   const q = QUESTIONS[current];
   const card = document.createElement("div");
   card.className = "q active";
+
   let html = `<div class="qnum">${q.num}</div><div class="qtitle">${q.title}</div>`;
-  q.options.forEach((label,i)=>{ html += `<button class="opt" data-i="${i}">${label}</button>`; });
-  html += `<div class="nav"><button class="back" id="backBtn" ${current===0?"disabled":""}>← 上一題</button><span></span></div>`;
+  if(q.multi){ html += `<div class="qhint">可複選，最多 ${q.maxPick} 項</div>`; }
+
+  q.options.forEach((label,i)=>{
+    const sel = q.multi ? answers[current].includes(i) : answers[current]===i;
+    html += `<button class="opt${sel?' selected':''}" data-i="${i}"><span class="tick">✓</span>${label}</button>`;
+  });
+
+  html += `<div class="nav"><button class="back" id="backBtn" ${current===0?"disabled":""}>← 上一題</button>`;
+  if(q.multi){
+    html += `<button class="next" id="nextBtn">下一題 →</button>`;
+  } else {
+    html += `<span></span>`;
+  }
+  html += `</div>`;
   card.innerHTML = html;
   quizEl.appendChild(card);
+
   card.querySelectorAll(".opt").forEach(btn=>{
-    btn.addEventListener("click",()=>choose(parseInt(btn.dataset.i)));
+    btn.addEventListener("click",()=>{ btn.blur(); choose(parseInt(btn.dataset.i)); });
   });
   document.getElementById("backBtn").addEventListener("click",goBack);
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn){
+    nextBtn.disabled = answers[current].length===0;
+    nextBtn.addEventListener("click",()=>{ nextBtn.blur(); goNext(); });
+  }
+
   barEl.style.width = (current/QUESTIONS.length*100)+"%";
   stepLabel.textContent = `第 ${current+1} 題 / 共 ${QUESTIONS.length} 題`;
 }
 
 function choose(i){
-  answers[current] = i;
+  const q = QUESTIONS[current];
+  if(q.multi){
+    const arr = answers[current];
+    const idx = arr.indexOf(i);
+    if(idx>=0){ arr.splice(idx,1); }
+    else{
+      if(arr.length >= q.maxPick) return; // 已達上限，忽略
+      arr.push(i);
+    }
+    render(); // 重畫以更新勾選狀態與下一題按鈕
+  } else {
+    answers[current] = i;
+    if(current < QUESTIONS.length-1){ current++; render(); }
+    else{ submit(); }
+  }
+}
+
+function goNext(){
+  if(answers[current].length===0) return;
   if(current < QUESTIONS.length-1){ current++; render(); }
   else{ submit(); }
 }
@@ -160,7 +206,6 @@ async function submit(){
   quizEl.style.display="none";
   document.getElementById("loading").style.display="block";
   window.scrollTo({top:0,behavior:"smooth"});
-
   try{
     const res = await fetch(API_URL, {
       method:"POST",
@@ -183,12 +228,10 @@ function showResult(data){
   document.getElementById("winnerName").textContent = w.name;
   document.getElementById("winnerFlavor").textContent = w.flavor;
   document.getElementById("winnerPct").textContent = `你有 ${w.pct}% 的「${w.name}」靈魂`;
-
   const rec = document.getElementById("recommend");
   rec.style.background = w.color;
   document.getElementById("recTitle").textContent = w.rec;
   document.getElementById("recDesc").textContent = w.desc;
-
   const specEl = document.getElementById("spectrum");
   specEl.innerHTML = "";
   data.spectrum.forEach(item=>{
@@ -199,12 +242,10 @@ function showResult(data){
       <div class="row-pct">${item.pct}%</div>`;
     specEl.appendChild(row);
   });
-
   document.getElementById("meta").innerHTML =
     `你的咖啡品味分級：<b>${data.level}</b>（品味分 ${data.tasteScore}/6）<br>`+
     `本次計分比例 — 生活題 ${data.weightLife}%、咖啡題 ${data.weightCoffee}%<br>`+
     `第二名是「${data.second.name}」（${data.second.pct}%），套組可帶入混搭風味。`;
-
   document.getElementById("result").style.display="block";
   barEl.style.width="100%";
   requestAnimationFrame(()=>{ setTimeout(()=>{
@@ -213,7 +254,8 @@ function showResult(data){
 }
 
 function restart(){
-  current=0; answers.fill(null);
+  current=0;
+  QUESTIONS.forEach((q,idx)=>{ answers[idx] = q.multi ? [] : null; });
   document.getElementById("result").style.display="none";
   document.getElementById("loading").style.display="none";
   document.querySelector(".progress").style.display="block";
