@@ -32,14 +32,14 @@
     border-radius:13px;padding:14px 16px;margin-bottom:10px;font-size:15.5px;color:var(--ink);
     cursor:pointer;transition:border-color .15s ease,background .15s ease;font-family:inherit;
     -webkit-tap-highlight-color:transparent;}
-  .opt:hover{border-color:var(--accent);background:#fffaf2;}
+  @media (hover:hover){ .opt:hover{border-color:var(--accent);background:#fffaf2;} }
   .opt.selected{border-color:var(--accent);background:#fff3e6;}
   .opt .tick{float:right;color:var(--accent);font-weight:700;opacity:0;}
   .opt.selected .tick{opacity:1;}
   .nav{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:12px;}
   .back{background:none;border:none;color:var(--ink-soft);font-size:14px;cursor:pointer;
     font-family:inherit;padding:8px 4px;}
-  .back:hover{color:var(--ink);}
+  @media (hover:hover){ .back:hover{color:var(--ink);} }
   .back:disabled{opacity:0;cursor:default;}
   .next{background:var(--accent);color:#fff;border:none;border-radius:11px;padding:11px 22px;
     font-size:15px;cursor:pointer;font-family:inherit;letter-spacing:1px;}
@@ -162,7 +162,11 @@ function render(){
   quizEl.appendChild(card);
 
   card.querySelectorAll(".opt").forEach(btn=>{
-    btn.addEventListener("click",()=>{ btn.blur(); choose(parseInt(btn.dataset.i)); });
+    if(q.multi){
+      btn.addEventListener("click",()=>toggleMulti(parseInt(btn.dataset.i), btn));
+    } else {
+      btn.addEventListener("click",()=>{ btn.blur(); choose(parseInt(btn.dataset.i)); });
+    }
   });
   document.getElementById("backBtn").addEventListener("click",goBack);
   const nextBtn = document.getElementById("nextBtn");
@@ -176,21 +180,26 @@ function render(){
 }
 
 function choose(i){
+  answers[current] = i;
+  if(current < QUESTIONS.length-1){ current++; render(); }
+  else{ submit(); }
+}
+
+// 多選：只更新被點的按鈕與「下一題」狀態，不重畫整張卡（避免閃動）
+function toggleMulti(i, btn){
   const q = QUESTIONS[current];
-  if(q.multi){
-    const arr = answers[current];
-    const idx = arr.indexOf(i);
-    if(idx>=0){ arr.splice(idx,1); }
-    else{
-      if(arr.length >= q.maxPick) return; // 已達上限，忽略
-      arr.push(i);
-    }
-    render(); // 重畫以更新勾選狀態與下一題按鈕
+  const arr = answers[current];
+  const idx = arr.indexOf(i);
+  if(idx>=0){
+    arr.splice(idx,1);
+    btn.classList.remove("selected");
   } else {
-    answers[current] = i;
-    if(current < QUESTIONS.length-1){ current++; render(); }
-    else{ submit(); }
+    if(arr.length >= q.maxPick) return; // 已達上限，忽略
+    arr.push(i);
+    btn.classList.add("selected");
   }
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.disabled = arr.length===0;
 }
 
 function goNext(){
