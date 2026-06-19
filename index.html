@@ -152,11 +152,7 @@ function render(){
   });
 
   html += `<div class="nav"><button class="back" id="backBtn" ${current===0?"disabled":""}>← 上一題</button>`;
-  if(q.multi){
-    html += `<button class="next" id="nextBtn">下一題 →</button>`;
-  } else {
-    html += `<span></span>`;
-  }
+  html += `<button class="next" id="nextBtn">${current===QUESTIONS.length-1?"看結果 →":"下一題 →"}</button>`;
   html += `</div>`;
   card.innerHTML = html;
   quizEl.appendChild(card);
@@ -165,24 +161,32 @@ function render(){
     if(q.multi){
       btn.addEventListener("click",()=>toggleMulti(parseInt(btn.dataset.i), btn));
     } else {
-      btn.addEventListener("click",()=>{ btn.blur(); choose(parseInt(btn.dataset.i)); });
+      btn.addEventListener("click",()=>selectSingle(parseInt(btn.dataset.i), btn));
     }
   });
   document.getElementById("backBtn").addEventListener("click",goBack);
   const nextBtn = document.getElementById("nextBtn");
-  if(nextBtn){
-    nextBtn.disabled = answers[current].length===0;
-    nextBtn.addEventListener("click",()=>{ nextBtn.blur(); goNext(); });
-  }
+  nextBtn.disabled = !hasAnswer(current);
+  nextBtn.addEventListener("click",()=>{ nextBtn.blur(); goNext(); });
 
   barEl.style.width = (current/QUESTIONS.length*100)+"%";
   stepLabel.textContent = `第 ${current+1} 題 / 共 ${QUESTIONS.length} 題`;
 }
 
-function choose(i){
+// 是否已作答（單選=有數字，多選=陣列非空）
+function hasAnswer(idx){
+  const a = answers[idx];
+  return QUESTIONS[idx].multi ? a.length>0 : a!==null;
+}
+
+// 單選：點擊打勾、取消同題其他選項，不自動跳題（要按下一題）
+function selectSingle(i, btn){
   answers[current] = i;
-  if(current < QUESTIONS.length-1){ current++; render(); }
-  else{ submit(); }
+  const card = quizEl.querySelector(".q");
+  card.querySelectorAll(".opt").forEach(b=>b.classList.remove("selected"));
+  btn.classList.add("selected");
+  const nextBtn = document.getElementById("nextBtn");
+  if(nextBtn) nextBtn.disabled = false;
 }
 
 // 多選：只更新被點的按鈕與「下一題」狀態，不重畫整張卡（避免閃動）
@@ -203,7 +207,7 @@ function toggleMulti(i, btn){
 }
 
 function goNext(){
-  if(answers[current].length===0) return;
+  if(!hasAnswer(current)) return;
   if(current < QUESTIONS.length-1){ current++; render(); }
   else{ submit(); }
 }
