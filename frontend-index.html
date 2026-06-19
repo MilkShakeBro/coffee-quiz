@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>找出你的咖啡風味動物</title>
+<style>
+  :root{
+    --bg:#f7f2e9; --card:#fffdf8; --ink:#4a4034; --ink-soft:#8a7d6b; --line:#e6dcc8;
+    --accent:#dd874a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);
+    font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:680px;margin:0 auto;padding:32px 20px 64px;}
+  header{text-align:center;padding:24px 0 8px;}
+  .eyebrow{font-size:13px;letter-spacing:3px;color:var(--ink-soft);margin-bottom:10px;}
+  h1{font-size:27px;font-weight:600;letter-spacing:1px;}
+  .sub{font-size:15px;color:var(--ink-soft);margin-top:10px;}
+  .progress{height:6px;background:var(--line);border-radius:99px;margin:28px 0 8px;overflow:hidden;}
+  .bar{height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s ease;}
+  .step-label{font-size:13px;color:var(--ink-soft);text-align:right;margin-bottom:24px;}
+  .q{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:26px 22px;margin-bottom:18px;display:none;animation:fade .45s ease;}
+  .q.active{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .qnum{font-size:12px;letter-spacing:2px;color:var(--ink-soft);margin-bottom:8px;}
+  .qtitle{font-size:19px;font-weight:600;margin-bottom:18px;line-height:1.5;}
+  .opt{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);
+    border-radius:13px;padding:14px 16px;margin-bottom:10px;font-size:15.5px;color:var(--ink);
+    cursor:pointer;transition:all .15s ease;font-family:inherit;}
+  .opt:hover{border-color:var(--accent);background:#fffaf2;}
+  .opt:active{transform:scale(.99);}
+  .nav{display:flex;justify-content:space-between;margin-top:6px;}
+  .back{background:none;border:none;color:var(--ink-soft);font-size:14px;cursor:pointer;
+    font-family:inherit;padding:8px 4px;}
+  .back:hover{color:var(--ink);}
+  .back:disabled{opacity:0;cursor:default;}
+  #loading,#result{display:none;}
+  #loading{text-align:center;padding:60px 0;color:var(--ink-soft);font-size:15px;}
+  .result-head{text-align:center;margin-bottom:8px;}
+  .result-eyebrow{font-size:13px;letter-spacing:2px;color:var(--ink-soft);}
+  .winner-name{font-size:34px;font-weight:700;margin:6px 0 2px;}
+  .winner-flavor{font-size:16px;color:var(--ink-soft);}
+  .winner-pct{font-size:15px;margin-top:6px;font-weight:600;}
+  .spectrum{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:24px 22px;margin:22px 0;}
+  .spectrum h3{font-size:15px;font-weight:600;margin-bottom:18px;}
+  .row{display:flex;align-items:center;margin-bottom:14px;}
+  .row-name{width:74px;font-size:14px;flex-shrink:0;}
+  .track{flex:1;height:14px;background:var(--line);border-radius:99px;overflow:hidden;margin:0 10px;}
+  .fill{height:100%;border-radius:99px;width:0;transition:width .9s cubic-bezier(.2,.8,.2,1);}
+  .row-pct{width:46px;text-align:right;font-size:14px;font-weight:600;flex-shrink:0;}
+  .recommend{border-radius:18px;padding:24px 22px;color:#fff;margin-bottom:18px;}
+  .recommend .tag{font-size:12px;letter-spacing:2px;opacity:.9;}
+  .recommend h3{font-size:21px;font-weight:600;margin:6px 0 10px;}
+  .recommend p{font-size:14.5px;opacity:.95;line-height:1.7;}
+  .meta{font-size:13px;color:var(--ink-soft);text-align:center;background:var(--card);
+    border:1px dashed var(--line);border-radius:14px;padding:14px;margin-bottom:22px;}
+  .restart{display:block;width:100%;background:var(--ink);color:#fff;border:none;border-radius:13px;
+    padding:15px;font-size:15px;cursor:pointer;font-family:inherit;letter-spacing:1px;}
+  .restart:hover{opacity:.9;}
+  .footnote{font-size:12px;color:var(--ink-soft);text-align:center;margin-top:20px;line-height:1.6;}
+  .err{color:#b5482f;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">咖啡風味測驗</div>
+    <h1>找出你的咖啡風味動物</h1>
+    <p class="sub">七個問題，找到屬於你的那一杯</p>
+  </header>
+
+  <div class="progress"><div class="bar" id="bar"></div></div>
+  <div class="step-label" id="stepLabel"></div>
+
+  <div id="quiz"></div>
+  <div id="loading">正在為你分析風味…</div>
+
+  <div id="result">
+    <div class="result-head">
+      <div class="result-eyebrow">你的風味主色是</div>
+      <div class="winner-name" id="winnerName"></div>
+      <div class="winner-flavor" id="winnerFlavor"></div>
+      <div class="winner-pct" id="winnerPct"></div>
+    </div>
+    <div class="recommend" id="recommend">
+      <div class="tag">推薦套組</div>
+      <h3 id="recTitle"></h3>
+      <p id="recDesc"></p>
+    </div>
+    <div class="spectrum">
+      <h3>你的完整風味光譜</h3>
+      <div id="spectrum"></div>
+    </div>
+    <div class="meta" id="meta"></div>
+    <button class="restart" onclick="restart()">重新測一次</button>
+    <p class="footnote">測試版問卷，計分邏輯仍在調整中。</p>
+  </div>
+</div>
+
+<script>
+// ===== 設定：部署 Worker 後，把這行換成你的 Worker 網址 =====
+const API_URL = "https://63f9ad1c.coffee-quiz-api.pages.dev/";
+
+// 題目「文字」放前端（公開沒關係），但「權重」不在這裡，全在後端。
+const QUESTIONS = [
+  { num:"品味 1 / 2", title:"你喝咖啡多久了？",
+    options:["幾乎不喝／剛開始","偶爾喝，還在摸索","常喝，有自己的喜好","很投入，會研究產區與處理法"] },
+  { num:"品味 2 / 2", title:"喝咖啡時，你喝得出不同的風味差異嗎？",
+    options:["老實說喝不太出來","大概能分出濃淡、苦酸","能感覺到一些果香、花香","能明確分辨不同風味層次"] },
+  { num:"生活 1 / 2", title:"走進一家飲料／甜點店，你最想點哪一個？",
+    options:["微醺感的調酒、酒香巧克力","花茶、玫瑰荔枝氣泡飲","熱可可、堅果拿鐵","莓果優格、藍莓氣泡飲","焦糖布丁、蜂蜜蛋糕","檸檬氣泡水、柚子茶"] },
+  { num:"生活 2 / 2", title:"哪一種「感覺」最像你？",
+    options:["成熟、有品味、喜歡特別的東西","溫柔、細膩、注重氛圍","沉穩、踏實、喜歡熟悉的安心感","愛嘗鮮、有點調皮、怕無聊","隨和、療癒系、討喜","清爽、俐落、喜歡明亮的東西"] },
+  { num:"咖啡 1 / 3", title:"如果一杯咖啡可以「聞起來像」一個畫面，你想要哪個？",
+    options:["像陳年酒窖、熟成水果的醇厚香","像剛走進花店的滿室花香","像烤堅果、可可粉的暖香","像打翻一籃新鮮莓果","像焦糖、紅糖在鍋裡融化","像切開柑橘、檸檬的清新"] },
+  { num:"咖啡 2 / 3", title:"喝下去那一口，你最希望主角是什麼味道？",
+    options:["厚實、有層次、回味複雜","輕盈、優雅、香氣帶甜","飽滿、濃郁、像巧克力","活潑、酸甜跳動、像果汁","順口、甜甜的、零負擔","明亮、清爽、有清楚的酸"] },
+  { num:"咖啡 3 / 3", title:"對「酸」這件事，你的態度比較接近？",
+    options:["不愛酸，喜歡醇厚或濃郁的","一點點甜酸可以，要溫和","喜歡明亮活潑的果酸","愛乾淨明亮的酸，越清爽越好","不確定，看整體順不順口"] },
+];
+
+let current = 0;
+const answers = new Array(QUESTIONS.length).fill(null);
+const quizEl = document.getElementById("quiz");
+const barEl = document.getElementById("bar");
+const stepLabel = document.getElementById("stepLabel");
+
+function render(){
+  quizEl.innerHTML = "";
+  const q = QUESTIONS[current];
+  const card = document.createElement("div");
+  card.className = "q active";
+  let html = `<div class="qnum">${q.num}</div><div class="qtitle">${q.title}</div>`;
+  q.options.forEach((label,i)=>{ html += `<button class="opt" data-i="${i}">${label}</button>`; });
+  html += `<div class="nav"><button class="back" id="backBtn" ${current===0?"disabled":""}>← 上一題</button><span></span></div>`;
+  card.innerHTML = html;
+  quizEl.appendChild(card);
+  card.querySelectorAll(".opt").forEach(btn=>{
+    btn.addEventListener("click",()=>choose(parseInt(btn.dataset.i)));
+  });
+  document.getElementById("backBtn").addEventListener("click",goBack);
+  barEl.style.width = (current/QUESTIONS.length*100)+"%";
+  stepLabel.textContent = `第 ${current+1} 題 / 共 ${QUESTIONS.length} 題`;
+}
+
+function choose(i){
+  answers[current] = i;
+  if(current < QUESTIONS.length-1){ current++; render(); }
+  else{ submit(); }
+}
+function goBack(){ if(current>0){ current--; render(); } }
+
+async function submit(){
+  document.querySelector(".progress").style.display="none";
+  stepLabel.style.display="none";
+  quizEl.style.display="none";
+  document.getElementById("loading").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+
+  try{
+    const res = await fetch(API_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ answers }),
+    });
+    if(!res.ok) throw new Error("伺服器回應錯誤");
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    showResult(data);
+  }catch(e){
+    document.getElementById("loading").innerHTML =
+      `<span class="err">分析失敗：${e.message}<br>請確認 API 網址設定正確，或稍後再試。</span>`;
+  }
+}
+
+function showResult(data){
+  document.getElementById("loading").style.display="none";
+  const w = data.winner;
+  document.getElementById("winnerName").textContent = w.name;
+  document.getElementById("winnerFlavor").textContent = w.flavor;
+  document.getElementById("winnerPct").textContent = `你有 ${w.pct}% 的「${w.name}」靈魂`;
+
+  const rec = document.getElementById("recommend");
+  rec.style.background = w.color;
+  document.getElementById("recTitle").textContent = w.rec;
+  document.getElementById("recDesc").textContent = w.desc;
+
+  const specEl = document.getElementById("spectrum");
+  specEl.innerHTML = "";
+  data.spectrum.forEach(item=>{
+    const row = document.createElement("div");
+    row.className="row";
+    row.innerHTML = `<div class="row-name">${item.name}</div>
+      <div class="track"><div class="fill" data-w="${item.pct}" style="background:${item.color}"></div></div>
+      <div class="row-pct">${item.pct}%</div>`;
+    specEl.appendChild(row);
+  });
+
+  document.getElementById("meta").innerHTML =
+    `你的咖啡品味分級：<b>${data.level}</b>（品味分 ${data.tasteScore}/6）<br>`+
+    `本次計分比例 — 生活題 ${data.weightLife}%、咖啡題 ${data.weightCoffee}%<br>`+
+    `第二名是「${data.second.name}」（${data.second.pct}%），套組可帶入混搭風味。`;
+
+  document.getElementById("result").style.display="block";
+  barEl.style.width="100%";
+  requestAnimationFrame(()=>{ setTimeout(()=>{
+    document.querySelectorAll(".fill").forEach(f=>{ f.style.width = f.dataset.w+"%"; });
+  },80); });
+}
+
+function restart(){
+  current=0; answers.fill(null);
+  document.getElementById("result").style.display="none";
+  document.getElementById("loading").style.display="none";
+  document.querySelector(".progress").style.display="block";
+  stepLabel.style.display="block";
+  quizEl.style.display="block";
+  render();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+render();
+</script>
+</body>
+</html>
